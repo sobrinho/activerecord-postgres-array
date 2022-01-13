@@ -20,23 +20,16 @@ class String
     if empty?
       []
     else
-      elements = match(/\{(.*)\}/m).captures.first.gsub(/\\"/, '$ESCAPED_DOUBLE_QUOTE$').split(/(?:,)(?=(?:[^"]|"[^"]*")*$)/m)
-      elements = elements.map do |e|
-        res = e.gsub('$ESCAPED_DOUBLE_QUOTE$', '"').gsub("\\\\", "\\").gsub(/^"/, '').gsub(/"$/, '').gsub("''", "'").strip
-        res == 'NULL' ? nil : res
-      end
+      converter = case base_type
+                  when :decimal then Proc.new {|x| x.to_d }
+                  when :float then Proc.new {|x| x.to_f }
+                  when :integer, :bigint then Proc.new {|x| x.to_i }
+                  when :timestamp then Proc.new {|x| x.to_time.in_time_zone }
+                  else Proc.new {|x| x }
+                  end
 
-      if base_type == :decimal
-        elements.collect(&:to_d)
-      elsif base_type == :float
-        elements.collect(&:to_f)
-      elsif base_type == :integer || base_type == :bigint
-        elements.collect(&:to_i)
-      elsif base_type == :timestamp
-        elements.collect(&:to_time)
-      else
-        elements
-      end
+      parser = ActiveRecordPostgresArray::Parser.new(self, converter)
+      parser.parse
     end
   end
 end

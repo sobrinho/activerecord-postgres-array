@@ -13,5 +13,6 @@ else
   end
 end
 
+require "activerecord-postgres-array/parser"
 require "activerecord-postgres-array/string"
 require "activerecord-postgres-array/array"
